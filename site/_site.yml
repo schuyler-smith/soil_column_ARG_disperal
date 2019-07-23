@@ -1,0 +1,17 @@
+name: "Soil Column ARG Dispersal Workflow"
+output_dir: "../docs"
+navbar:
+  title: "Soil Column ARG Dispersal Workflow"
+  type: inverse
+output:
+  html_document:
+    lib_dir: site_libs
+    theme: cerulean
+    highlight: textmate
+    include:
+      after_body: footer.html
+    css: styles.css
+    toc: true
+    toc_float: 
+      collapsed: false
+      smooth_scroll: false

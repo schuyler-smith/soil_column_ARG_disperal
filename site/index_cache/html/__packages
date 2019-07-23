@@ -1,0 +1,10 @@
+base
+data.table
+phyloseq
+phylosmith
+ggplot2
+permute
+lattice
+vegan
+schuylR
+gridExtra

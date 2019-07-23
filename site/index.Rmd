@@ -1,0 +1,317 @@
+---
+title: "Soil Column ARG Dispersal Workflow"
+author: "Schuyler D. smith"
+date: "`r Sys.Date()`"
+---
+<br>
+<br>
+
+#Required Pacakges
+
+```{r required-packages}
+library(data.table)
+library(phyloseq)
+library(phylosmith)
+library(ggplot2)
+library(vegan)
+library(schuylR)
+library(gridExtra)
+```
+
+#Data Setup
+
+```{r load-data}
+phylo_object <- readRDS("../data/soil_column_ARGs.RDS"); phylo_object
+
+phylo_object <- phylosmith::merge_treatments(phylo_object, 'Matrix', 'Treatment')
+treatments <- 'Matrix_Treatment'
+levels(phylo_object@sam_data$Matrix_Treatment) <- c('Effluent', 'Manure', 'Soil', 'Manure-Treated Effluent', NA, 'Manure-Treated Soil')
+phylo_object <- phylosmith::set_treatment_levels(phylo_object, treatment = 'Matrix_Treatment', 
+                order = c('Manure', 'Soil', 'Effluent', 'Manure-Treated Soil', 'Manure-Treated Effluent'))
+
+metadata <- fread('../data/metadata.tsv')
+gsub('SC.*_A', 'A', metadata$`Sample ID`) == sample_names(phylo_object)
+sample_names(phylo_object) <- paste(sapply(strsplit(metadata$`Sample ID`, '_'),  `[`, 1), metadata$Day, sep = '_Day_')
+phylo_object
+```
+
+```{r initiate environment, echo=FALSE}
+knitr::opts_chunk$set(output.lines=6, cache = TRUE, fig.width = 16, fig.height = 8)
+phylo_object <- classify_ARG_classes(phylo_object, "Accession", combine = 2)
+phylo_object <- classify_ARG_mechanisms(phylo_object, "Accession")
+phylo_object@tax_table[,'ARG_Class'][phylo_object@tax_table[,'ARG_Class'] == "Antibiotic Without Defined Classification",] <- 'Unclassified'
+phylo_object <- set_treatment_levels(phylo_object, 'Matrix', c('Manure', 'Soil', 'Effluent'))
+phylo_object <- set_treatment_levels(phylo_object, 'Treatment', c('Control', 'Manure'))
+phylo_object <- set_treatment_levels(phylo_object, 'Day', 'numeric')
+phylo_object <- set_sample_order(phylo_object, c('Matrix_Treatment', 'Day'))
+phylo_object <- taxa_filter(phylo_object, treatments)
+```
+
+```{r separate-systems, echo = FALSE}
+manure <- taxa_filter(phylo_object, treatments, subset = 'Manure', frequency = 0)
+manure_genes <- taxa_names(manure)
+soil <- taxa_filter(phylo_object, treatments, subset = c('Soil', 'Effluent'), frequency = 0)
+soil_genes <- taxa_names(soil)
+```
+
+#Manure Resistome vs Soil Resistome
+
+```{r manure-genes}
+manure
+```
+```{r soil-genes}
+soil
+```
+
+##Unique Genes for Each Resistome
+
+```{r unique-control-genes}
+unique_control_genes <- unique_taxa(phylo_object, treatments, c('Manure', 'Soil', 'Effluent')); sapply(unique_control_genes, length)
+```
+
+```{r class_proportions_manure}
+data.frame(taxa_proportions(manure, 'ARG_Class'), row.names = 1)
+```
+
+```{r class_proportions_soil}
+data.frame(taxa_proportions(soil, 'ARG_Class'), row.names = 1)
+```
+
+```{r abundance-comparison}
+sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = 'Manure')))/sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = 'Soil')))
+```
+
+#Phylogeny Profiles
+
+```{r phylogeny-bar-plots, fig.fullwidth=TRUE, warning=FALSE}
+g <- phylogeny_profile(conglomerate_samples(phylo_object, treatment = treatments, merge_on = 'Day'), 'ARG_Class', treatments, relative_abundance = TRUE) + 
+  labs(fill = 'Associated Anti-Microbial\nResistance Drug Class', x = 'Sampling Day') + 
+  guides(fill=guide_legend(ncol=1))
+g
+```
+
+#Ordination
+
+```{r tsne-relative-abundance, echo=FALSE}
+phyloseq_obj = relative_abundance(phylo_object)
+treatment = c(treatments)
+phyloseq_obj <- taxa_filter(phyloseq_obj, treatment, frequency = 0)
+treatment_name <- paste(treatment, collapse = '_')
+metadata <- as(access(phyloseq_obj, "sam_data"), "data.frame")
+color_count <- length(unique(metadata[[treatment_name]]))
+graph_colors <- phylosmith:::create_palette(color_count, "default")
+tsne <- Rtsne::Rtsne(vegdist(t(access(phyloseq_obj, "otu_table")), 
+  method = "bray"), dims = 2, theta = 0, perplexity = 8)
+tSNE1 <- tsne$Y[, 1]
+tSNE2 <- tsne$Y[, 2]
+ord <- data.table(tSNE1, tSNE2, metadata)
+ord <- subset(ord, !is.na(treatment_name))
+g <- ggplot(data = ord, aes(tSNE1, tSNE2, group = Matrix_Treatment))
+points <- ggplot_build(g)$data[[1]]
+ellipse_df <- phylosmith:::CI_ellipse(points, 'group', level = 0.95)
+g <- g + geom_polygon(data = ellipse_df, aes(x = x, y = y, group = group), color = 'black', 
+                 fill = graph_colors[ellipse_df$group], alpha = 0.3, size = 0.6, linetype = 1)
+g <- g + geom_point(aes(fill = Matrix_Treatment), shape = c(21,22,24)[ord[['Matrix']]], 
+  color = "black", size = 7, alpha = 1) + scale_fill_manual(values = graph_colors) +
+  theme_classic() + theme(aspect.ratio = 1, axis.line.x = element_line(colour = "black", 
+    size = 1, linetype = "solid"), axis.line.y = element_line(colour = "black", 
+    size = 1, linetype = "solid"), axis.text.x = element_text(size = 10), 
+    axis.text.y = element_text(size = 10), axis.title.x = element_text(size = 10, 
+      face = "bold"), axis.title.y = element_text(size = 10, 
+      face = "bold"), legend.title = element_text(size = 10, face = 'bold'), 
+    legend.spacing.x = unit(0.005, 'npc'),
+    legend.text = element_text(size = 8), legend.background = element_rect(fill = (alpha = 0))) + 
+    labs(x = "t-SNE Dimension 1", y = "t-SNE Dimension 2")
+g + guides(fill = guide_legend(override.aes=list(shape=c(21,22,24,22,24)), keywidth=0.4,
+                 default.unit = "inch")) + labs(fill = 'Sample Type')
+```
+```{r tsne-relative-abundance-plot, echo=FALSE}
+g
+```
+
+#Statistical Tests
+
+```{r Mann-Whitney-test}
+wilcox.test(as(manure@otu_table, 'matrix'), as(soil@otu_table, 'matrix'))
+wilcox.test(as(taxa_filter(phylo_object, treatments, subset = 'Manure')@otu_table, 'matrix'), 
+            as(taxa_filter(phylo_object, treatments, subset = 'Manure-Treated Soil')@otu_table, 'matrix'))
+wilcox.test(as(taxa_filter(phylo_object, treatments, subset = 'Soil')@otu_table, 'matrix'), 
+            as(taxa_filter(phylo_object, treatments, subset = 'Manure-Treated Soil')@otu_table, 'matrix'))
+wilcox.test(as(taxa_filter(phylo_object, treatments, subset = 'Soil')@otu_table, 'matrix'), 
+            as(taxa_filter(phylo_object, treatments, subset = 'Manure-Treated Effluent')@otu_table, 'matrix'))
+wilcox.test(as(taxa_filter(phylo_object, treatments, subset = 'Effluent')@otu_table, 'matrix'), 
+            as(taxa_filter(phylo_object, treatments, subset = 'Manure-Treated Effluent')@otu_table, 'matrix'))
+```
+
+```{r anova-for-replicates}
+dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Manure')
+adonis(t(dat@otu_table) ~ Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
+
+dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Soil')
+adonis(t(dat@otu_table) ~ Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
+
+dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Effluent')
+adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
+
+dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Manure-Treated Soil')
+adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
+
+dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Manure-Treated Effluent')
+adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
+```
+
+#Identifying Persisting Genes from Manure
+
+```{r identify-persisters}
+sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, 'Treatment', 'Manure')))
+sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, treatments, 'Manure-Treated Effluent')))
+manure_persisters_genes <- unique_control_genes$Manure[unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, 'Treatment', 'Manure', frequency = 0.5))]
+persisters_in_manure <- taxa_filter(subset_taxa(phylo_object, taxa_names(phylo_object) %in% manure_persisters_genes), treatment = treatments, subset = 'Manure', drop_samples = TRUE)
+sum(taxa_sums(persisters_in_manure)) / sum(taxa_sums(taxa_filter(phylo_object, treatments, subset = 'Manure')))
+manure_persisters <- taxa_filter(subset_taxa(phylo_object, taxa_names(phylo_object) %in% manure_persisters_genes), treatment = 'Treatment', subset = 'Manure', drop_samples = TRUE)
+```
+
+```{r all-persister-merged, fig.width=16, fig.height=12}
+manure_persisters <- conglomerate_samples(manure_persisters, treatments, merge_on = 'Day')
+```
+
+```{r manure-persister-composition}
+data.frame(taxa_proportions(subset_taxa(manure_persisters, 'Matrix_Treatment' != 'Manure'), 'ARG_Class', treatments))
+```
+
+```{r manure-persister-composition-profile}
+phylogeny_profile(manure_persisters, classification = 'ARG_Class', treatment = treatments, relative_abundance = FALSE) + 
+  labs(color = 'Associated Anti-Microbial\nResistance Drug Class', fill = 'Associated Anti-Microbial\nResistance Drug Class', x = 'Sampling Day')
+```
+
+```{r all-persister-heatmaps-merged, fig.width=16, fig.height=12}
+graph_data <- melt_phyloseq(manure_persisters)
+colors <- phylosmith:::create_palette(length(unique(graph_data[['ARG_Class']])), 'default')
+abundance_heatmap(manure_persisters, classification = 'Gene', treatment = treatments, transformation = 'log') + 
+  theme(axis.text.y = element_text(colour = colors, face = 'bold')) + labs(color = 'Natural Log of\nGene Abundance', fill = 'Natural Log of\nGene Abundance', x = 'Sampling Day')
+```
+
+```{r all-persister-lines, fig.width=16, fig.height=8}
+abundance_lines(manure_persisters, 'Gene', treatments) + scale_x_discrete(expand = expand_scale(mult = c(0,0.02))) + 
+  theme(panel.spacing = unit(3, "cm")) + guides(colour = guide_legend(ncol = 1, override.aes = list(size = 4))) + 
+  labs(color = 'Gene', x = 'Sampling Day')
+```
+
+#Identify Enriched Genes
+
+```{r identify-stimulated-lists}
+Soil <- taxa_filter(phylo_object, treatments, subset = 'Soil', frequency = 0)
+Soil_genes <- taxa_names(Soil)
+effluent <- taxa_filter(phylo_object, treatments, subset = 'Effluent', frequency = 0)
+effluent_genes <- taxa_names(effluent)
+manure_treated_soil <- taxa_filter(phylo_object, treatments, subset = 'Manure-Treated Soil')
+manure_treated_soil_genes <- taxa_names(manure_treated_soil)
+
+water_stimulated <- effluent_genes[!(effluent_genes %in% Soil_genes)]
+water_stimulated <- water_stimulated[!(water_stimulated %in% manure_genes)]; length(water_stimulated)
+water_enhanced <- effluent_genes[effluent_genes %in% Soil_genes]
+water_enhanced <- water_enhanced[taxa_sums(subset_taxa(effluent, taxa_names(effluent) %in% water_enhanced))/nsamples(effluent) > taxa_sums(subset_taxa(Soil, taxa_names(Soil) %in% water_enhanced))/nsamples(Soil)]; length(water_enhanced)
+water_enriched <- c(water_enhanced, water_stimulated); length(water_enriched)
+
+manure_stimulated <- manure_treated_soil_genes[!(manure_treated_soil_genes %in% soil_genes)]
+manure_stimulated <- manure_stimulated[!(manure_stimulated %in% manure_genes)]
+length(manure_stimulated)
+manure_enhanced <- manure_treated_soil_genes[manure_treated_soil_genes %in% soil_genes]
+manure_enhanced <- manure_enhanced[taxa_sums(subset_taxa(manure_treated_soil, taxa_names(manure_treated_soil) %in% manure_enhanced))/nsamples(manure_treated_soil) > taxa_sums(subset_taxa(soil, taxa_names(soil) %in% manure_enhanced))/nsamples(soil)]
+manure_enhanced <- manure_enhanced[!(manure_enhanced %in% water_enriched)]; length(manure_enhanced)
+```
+
+```{r gene-labeling, echo=FALSE}
+manure_persisters_genes <- unique_control_genes$Manure[unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, 'Treatment', 'Manure', frequency = 0))]
+gene_classification <- list(
+  Manure_Persister = manure_persisters_genes,
+  Soil = c(soil_genes[!(soil_genes %in% c(water_enriched, manure_enhanced))]),
+  Water_Enriched = water_enriched,
+  Manure_Enriched = manure_enhanced
+)
+Background = taxa_names(phylo_object)[!(taxa_names(phylo_object) %in% unlist(gene_classification))]
+gene_classification$Background <- Background
+
+gene_classification <- data.table(Classification = rep(names(gene_classification), sapply(gene_classification, length)),
+  gene = unlist(gene_classification))
+gene_classification <- gene_classification[match(rownames(phylo_object@tax_table), gene_classification$gene), 1]
+phylo_object@tax_table <- tax_table(cbind(phylo_object@tax_table, as.matrix(gene_classification)))
+```
+
+```{r gene-profile}
+new <- as(phylo_object@tax_table, 'matrix')
+new <- new[,c(6,4)]
+newnew <- phylo_object
+newnew@tax_table <- tax_table(new)
+newnew <- conglomerate_samples(newnew, treatment = treatments)
+new <- conglomerate_taxa(newnew, 'ARG_Class')
+
+graph_data <- melt_phyloseq(taxa_filter(new, treatment = 'Matrix_Treatment', subset = 'Manure-Treated Effluent'))
+graph_data$Classification <- factor(graph_data$Classification, levels = c('Water_Enriched', 'Manure_Enriched', 'Manure_Persister', 'Soil', 'Background'))
+levels(graph_data$Classification) <- c('Water Enriched', 'Manure Enriched', 'Manure Persister', 'Soil', 'Background')
+# graph_data[, Relative_Abundance := Abundance/sum(Abundance), by = Classification]
+graph_data <- graph_data[!(graph_data$Classification %in% c('Soil', 'Background')), ]
+color_count <- length(unique(graph_data[['ARG_Class']]))
+graph_colors <- phylosmith:::create_palette(color_count)
+
+
+ggplot(graph_data, aes_string(x = "Classification", y = "Abundance", 
+                                   fill = 'ARG_Class')) + 
+  guides(fill = guide_legend(ncol = ceiling(length(unique(graph_data[['ARG_Class']]))/25)), color = FALSE) + 
+  scale_fill_manual(values = graph_colors, aesthetics = c("color", "fill")) + 
+  facet_grid(reformulate('Classification'), scales = "free", space = "free") + 
+  geom_bar(aes_string(color = 'ARG_Class', fill = 'ARG_Class'), stat = "identity", position = "stack", size = 0.8, color = 'black') + 
+  ylab('Abundance') + 
+  theme_classic() + theme(text = element_text(family = "times"),
+                                axis.text.x = element_blank(), axis.text.y = element_text(size = 10), axis.title.x = element_blank(), axis.title.y = element_text(size = 10, 
+                                                                                                                                                            face = "bold"), axis.ticks.x = element_blank(), 
+                          legend.title = element_text(size = 10, face = "bold"), 
+                          legend.text = element_text(size = 8), 
+                          legend.spacing.x = unit(0.01, "npc"), 
+                          panel.background = element_rect(color = "black", 
+                                                          size = 1.5, fill = "white"), panel.spacing = unit(0.01, "npc"), strip.text.x = element_text(size = 10, face = "bold"), 
+                          strip.background = element_rect(colour = "black", size = 1.4),
+                          legend.key.size = unit(4, "mm")) + 
+  scale_y_continuous(expand = expand_scale(mult = c(0.0037, 0.003), add = c(0, 0))) + 
+  scale_x_discrete(expand = expand_scale(mult = 0, add = 0.51)) + 
+labs(color = 'Associated Anti-Microbial\nResistance Drug Class', fill = 'Associated Anti-Microbial\nResistance Drug Class', x = 'Sampling Day')
+```
+
+
+```{r gene-proportions-manure-effluet}
+taxa_proportions(phylo_object, classification = 'Classification', treatment = treatments)[Matrix_Treatment == 'Manure-Treated Effluent']
+```
+
+
+```{r gene-proportions-effluent}
+taxa_proportions(phylo_object, classification = 'Classification', treatment = treatments)[Matrix_Treatment == 'Effluent']
+```
+
+#Co-Occurrence
+
+```{r comput-significant-rho, cache=TRUE, eval=FALSE}
+rho_cutoff <- permute_rho(phylo_object, treatments, replicate_samples = 'Day', permutations = 1000)
+quantile_permuted_rhos(rho_cutoff)
+```
+
+```{r co-occurrence}
+co_occurrence_table <- co_occurrence(phylo_object, treatments, p = 0.05)
+co_occurrence_table$p <- p.adjust(co_occurrence_table$p, "BH")
+co_occurrence_table <- co_occurrence_table[p < .05]
+co_occurrence_table <- co_occurrence_table[rho <= -0.68 | rho >= 0.86]
+```
+
+```{r effluent_networks_gene}
+layout <- network_layout_ps(phylo_object, 'Classification', treatments, 'Manure-Treated Effluent', co_occurrence_table, algorithm = 'fr')
+a <- co_occurrence_network(phylo_object, 'Classification', treatments, 'Manure-Treated Effluent', co_occurrence_table, layout = layout, cluster = TRUE) + 
+  labs(color = 'Gene Behavior', fill = 'Gene Behavior')
+
+b <- co_occurrence_network(phylo_object, 'ARG_Class', treatments, 'Manure-Treated Effluent', co_occurrence_table, layout = layout, cluster = TRUE) + 
+  labs(color = 'Associated Anti-Microbial\nResistance Drug Class', fill = 'Associated Anti-Microbial\nResistance Drug Class')
+
+grid.arrange(b, a, ncol = 2)
+```
+
+```{r effluent_networks_mechanism}
+co_occurrence_network(phylo_object, 'ARG_Mechanism', treatments, 'Manure-Treated Effluent', co_occurrence_table, layout = layout, cluster = TRUE, nodes_of_interest = c('tet(33)', 'ermB'))
+```
