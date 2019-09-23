@@ -4,9 +4,18 @@ author: "Schuyler D. smith"
 date: "`r Sys.Date()`"
 ---
 <br>
+<strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank">Project Repository with Data</a></strong>
 <br>
-
+<br>
+<strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank">Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</a></strong>
+<br>
+<br>
 #Required Pacakges
+```{r install-packages, eval=FALSE}
+devtools::install_github('schuyler-smith/phylosmith')
+devtools::install_github('schuyler-smith/schuylR')
+```
+
 
 ```{r required-packages}
 library(data.table)
@@ -124,9 +133,6 @@ g <- g + geom_point(aes(fill = Matrix_Treatment), shape = c(21,22,24)[ord[['Matr
     labs(x = "t-SNE Dimension 1", y = "t-SNE Dimension 2")
 g + guides(fill = guide_legend(override.aes=list(shape=c(21,22,24,22,24)), keywidth=0.4,
                  default.unit = "inch")) + labs(fill = 'Sample Type')
-```
-```{r tsne-relative-abundance-plot, echo=FALSE}
-g
 ```
 
 #Statistical Tests
@@ -306,8 +312,8 @@ co_occurrence_table <- co_occurrence_table[rho <= -0.68 | rho >= 0.86]
 ```
 
 ```{r effluent_networks_gene}
-layout <- network_layout_ps(phylo_object, 'Classification', treatments, 'Manure-Treated Effluent', co_occurrence_table, algorithm = 'fr')
-a <- co_occurrence_network(phylo_object, 'Classification', treatments, 'Manure-Treated Effluent', co_occurrence_table, layout = layout, cluster = TRUE) + 
+layout <- network_layout_ps(phylo_object, treatments, 'Manure-Treated Effluent', co_occurrence_table, algorithm = 'fr')
+a <- co_occurrence_network(phylo_object, 'Classification', treatments, 'Manure-Treated Effluent', co_occurrence_table = co_occurrence_table, layout = layout, cluster = TRUE) + 
   labs(color = 'Gene Behavior', fill = 'Gene Behavior')
 
 b <- co_occurrence_network(phylo_object, 'ARG_Class', treatments, 'Manure-Treated Effluent', co_occurrence_table, layout = layout, cluster = TRUE) + 

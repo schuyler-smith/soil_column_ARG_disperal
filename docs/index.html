@@ -370,8 +370,9 @@ div.tocify {
 </div>
 
 
-<p><br> <br></p>
-<p>#Required Pacakges</p>
+<p><br> <strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank">Project Repository with Data</a></strong> <br> <br> <strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank">Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</a></strong> <br> <br> #Required Pacakges</p>
+<pre class="r"><code>devtools::install_github(&#39;schuyler-smith/phylosmith&#39;)
+devtools::install_github(&#39;schuyler-smith/schuylR&#39;)</code></pre>
 <pre class="r"><code>library(data.table)
 library(phyloseq)
 library(phylosmith)
@@ -472,7 +473,7 @@ phylo_object</code></pre>
 g</code></pre>
 <p><img src="index_files/figure-html/phylogeny-bar-plots-1.png" width="1536" /></p>
 <p>#Ordination</p>
-<p><img src="index_files/figure-html/tsne-relative-abundance-1.png" width="1536" /> <img src="index_files/figure-html/tsne-relative-abundance-plot-1.png" width="1536" /></p>
+<p><img src="index_files/figure-html/tsne-relative-abundance-1.png" width="1536" /></p>
 <p>#Statistical Tests</p>
 <pre class="r"><code>wilcox.test(as(manure@otu_table, &#39;matrix&#39;), as(soil@otu_table, &#39;matrix&#39;))</code></pre>
 <pre><code>## 
@@ -792,8 +793,8 @@ quantile_permuted_rhos(rho_cutoff)</code></pre>
 co_occurrence_table$p &lt;- p.adjust(co_occurrence_table$p, &quot;BH&quot;)
 co_occurrence_table &lt;- co_occurrence_table[p &lt; .05]
 co_occurrence_table &lt;- co_occurrence_table[rho &lt;= -0.68 | rho &gt;= 0.86]</code></pre>
-<pre class="r"><code>layout &lt;- network_layout_ps(phylo_object, &#39;Classification&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, algorithm = &#39;fr&#39;)
-a &lt;- co_occurrence_network(phylo_object, &#39;Classification&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, layout = layout, cluster = TRUE) + 
+<pre class="r"><code>layout &lt;- network_layout_ps(phylo_object, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, algorithm = &#39;fr&#39;)
+a &lt;- co_occurrence_network(phylo_object, &#39;Classification&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table = co_occurrence_table, layout = layout, cluster = TRUE) + 
   labs(color = &#39;Gene Behavior&#39;, fill = &#39;Gene Behavior&#39;)
 
 b &lt;- co_occurrence_network(phylo_object, &#39;ARG_Class&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, layout = layout, cluster = TRUE) + 
