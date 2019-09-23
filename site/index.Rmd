@@ -238,6 +238,10 @@ gene_classification <- gene_classification[match(rownames(phylo_object@tax_table
 phylo_object@tax_table <- tax_table(cbind(phylo_object@tax_table, as.matrix(gene_classification)))
 ```
 
+```{r manure-persister-genes}
+manure_persisters_genes
+```
+
 ```{r gene-profile}
 new <- as(phylo_object@tax_table, 'matrix')
 new <- new[,c(6,4)]

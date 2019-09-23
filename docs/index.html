@@ -12,7 +12,7 @@
 
 <meta name="author" content="Schuyler D. smith" />
 
-<meta name="date" content="2019-07-23" />
+<meta name="date" content="2019-09-23" />
 
 <title>Soil Column ARG Dispersal Workflow</title>
 
@@ -90,7 +90,6 @@ code {
 }
 img {
   max-width:100%;
-  height: auto;
 }
 .tabbed-pane {
   padding-top: 12px;
@@ -366,30 +365,21 @@ div.tocify {
 
 <h1 class="title toc-ignore">Soil Column ARG Dispersal Workflow</h1>
 <h4 class="author">Schuyler D. smith</h4>
-<h4 class="date">2019-07-23</h4>
+<h4 class="date">2019-09-23</h4>
 
 </div>
 
 
 <p><br> <br></p>
-<div id="required-pacakges" class="section level1">
-<h1>Required Pacakges</h1>
-<pre class="r"><code>library(data.table)</code></pre>
-<pre><code>## data.table 1.12.2 using 4 threads (see ?getDTthreads).  Latest news: r-datatable.com</code></pre>
-<pre class="r"><code>library(phyloseq)
+<p>#Required Pacakges</p>
+<pre class="r"><code>library(data.table)
+library(phyloseq)
 library(phylosmith)
-library(ggplot2)</code></pre>
-<pre><code>## Find out what&#39;s changed in ggplot2 at
-## https://github.com/tidyverse/ggplot2/releases.</code></pre>
-<pre class="r"><code>library(vegan)</code></pre>
-<pre><code>## Loading required package: permute</code></pre>
-<pre><code>## Loading required package: lattice</code></pre>
-<pre><code>## This is vegan 2.5-5</code></pre>
-<pre class="r"><code>library(schuylR)
+library(ggplot2)
+library(vegan)
+library(schuylR)
 library(gridExtra)</code></pre>
-</div>
-<div id="data-setup" class="section level1">
-<h1>Data Setup</h1>
+<p>#Data Setup</p>
 <pre class="r"><code>phylo_object &lt;- readRDS(&quot;../data/soil_column_ARGs.RDS&quot;); phylo_object</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 320 taxa and 56 samples ]
@@ -413,9 +403,7 @@ phylo_object</code></pre>
 ## otu_table()   OTU Table:         [ 320 taxa and 56 samples ]
 ## sample_data() Sample Data:       [ 56 samples by 9 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 320 taxa by 3 taxonomic ranks ]</code></pre>
-</div>
-<div id="manure-resistome-vs-soil-resistome" class="section level1">
-<h1>Manure Resistome vs Soil Resistome</h1>
+<p>#Manure Resistome vs Soil Resistome</p>
 <pre class="r"><code>manure</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 173 taxa and 4 samples ]
@@ -426,8 +414,7 @@ phylo_object</code></pre>
 ## otu_table()   OTU Table:         [ 176 taxa and 16 samples ]
 ## sample_data() Sample Data:       [ 16 samples by 9 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 176 taxa by 5 taxonomic ranks ]</code></pre>
-<div id="unique-genes-for-each-resistome" class="section level2">
-<h2>Unique Genes for Each Resistome</h2>
+<p>##Unique Genes for Each Resistome</p>
 <pre class="r"><code>unique_control_genes &lt;- unique_taxa(phylo_object, treatments, c(&#39;Manure&#39;, &#39;Soil&#39;, &#39;Effluent&#39;)); sapply(unique_control_genes, length)</code></pre>
 <pre><code>##   Manure     Soil Effluent 
 ##       88        8       54</code></pre>
@@ -478,22 +465,15 @@ phylo_object</code></pre>
 ## Streptogramin                       0.000</code></pre>
 <pre class="r"><code>sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = &#39;Manure&#39;)))/sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = &#39;Soil&#39;)))</code></pre>
 <pre><code>## [1] 290.9389</code></pre>
-</div>
-</div>
-<div id="phylogeny-profiles" class="section level1">
-<h1>Phylogeny Profiles</h1>
+<p>#Phylogeny Profiles</p>
 <pre class="r"><code>g &lt;- phylogeny_profile(conglomerate_samples(phylo_object, treatment = treatments, merge_on = &#39;Day&#39;), &#39;ARG_Class&#39;, treatments, relative_abundance = TRUE) + 
   labs(fill = &#39;Associated Anti-Microbial\nResistance Drug Class&#39;, x = &#39;Sampling Day&#39;) + 
   guides(fill=guide_legend(ncol=1))
 g</code></pre>
 <p><img src="index_files/figure-html/phylogeny-bar-plots-1.png" width="1536" /></p>
-</div>
-<div id="ordination" class="section level1">
-<h1>Ordination</h1>
+<p>#Ordination</p>
 <p><img src="index_files/figure-html/tsne-relative-abundance-1.png" width="1536" /> <img src="index_files/figure-html/tsne-relative-abundance-plot-1.png" width="1536" /></p>
-</div>
-<div id="statistical-tests" class="section level1">
-<h1>Statistical Tests</h1>
+<p>#Statistical Tests</p>
 <pre class="r"><code>wilcox.test(as(manure@otu_table, &#39;matrix&#39;), as(soil@otu_table, &#39;matrix&#39;))</code></pre>
 <pre><code>## 
 ##  Wilcoxon rank sum test with continuity correction
@@ -615,9 +595,7 @@ adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, &#39;data.frame&
 ## Sample    18    1.0481       0       0 0.30101      1
 ## Residuals  0    0.0000    -Inf         0.00000       
 ## Total     23    3.4818                 1.00000</code></pre>
-</div>
-<div id="identifying-persisting-genes-from-manure" class="section level1">
-<h1>Identifying Persisting Genes from Manure</h1>
+<p>#Identifying Persisting Genes from Manure</p>
 <pre class="r"><code>sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, &#39;Treatment&#39;, &#39;Manure&#39;)))</code></pre>
 <pre><code>## [1] 75</code></pre>
 <pre class="r"><code>sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, treatments, &#39;Manure-Treated Effluent&#39;)))</code></pre>
@@ -656,9 +634,7 @@ abundance_heatmap(manure_persisters, classification = &#39;Gene&#39;, treatment 
 <pre><code>## Scale for &#39;x&#39; is already present. Adding another scale for &#39;x&#39;, which
 ## will replace the existing scale.</code></pre>
 <p><img src="index_files/figure-html/all-persister-lines-1.png" width="1536" /></p>
-</div>
-<div id="identify-enriched-genes" class="section level1">
-<h1>Identify Enriched Genes</h1>
+<p>#Identify Enriched Genes</p>
 <pre class="r"><code>Soil &lt;- taxa_filter(phylo_object, treatments, subset = &#39;Soil&#39;, frequency = 0)
 Soil_genes &lt;- taxa_names(Soil)
 effluent &lt;- taxa_filter(phylo_object, treatments, subset = &#39;Effluent&#39;, frequency = 0)
@@ -682,6 +658,82 @@ length(manure_stimulated)</code></pre>
 manure_enhanced &lt;- manure_enhanced[taxa_sums(subset_taxa(manure_treated_soil, taxa_names(manure_treated_soil) %in% manure_enhanced))/nsamples(manure_treated_soil) &gt; taxa_sums(subset_taxa(soil, taxa_names(soil) %in% manure_enhanced))/nsamples(soil)]
 manure_enhanced &lt;- manure_enhanced[!(manure_enhanced %in% water_enriched)]; length(manure_enhanced)</code></pre>
 <pre><code>## [1] 63</code></pre>
+<pre class="r"><code>manure_persisters_genes</code></pre>
+<pre><code>##  [1] &quot;gb|AJ561197|+|1320-2142|ARO:3002839|lnuF&quot;                  
+##  [2] &quot;gb|NG_047417.1|+|0-995|ARO:3002644|APH(3)-IIa&quot;             
+##  [3] &quot;gb|AY712687|+|0-831|ARO:3002628|aad(6)&quot;                    
+##  [4] &quot;gb|AY701528.1|+|9695-10589|ARO:3004191|APH(2)-If&quot;          
+##  [5] &quot;gb|EF452177|+|0-495|ARO:3002838|lnuD&quot;                      
+##  [6] &quot;gb|AY743590|+|0-1188|ARO:3000566|tet(39)&quot;                  
+##  [7] &quot;gb|AJ007350.1|+|239-1094|ARO:3004359|ACI-1&quot;                
+##  [8] &quot;gb|AJ295238.3|+|163-2083|ARO:3000196|tet32&quot;                
+##  [9] &quot;gb|AF047479|+|1295-2087|ARO:3002603|aadA3&quot;                 
+## [10] &quot;gb|AM399080|-|1664-2150|ARO:3002835|lnuA&quot;                  
+## [11] &quot;gb|NC_019368.1|+|58200-58833|ARO:3002676|catB3&quot;            
+## [12] &quot;gb|AY928180|+|0-495|ARO:3002837|lnuC&quot;                      
+## [13] &quot;gb|AF137361|+|63-852|ARO:3002605|aadA5&quot;                    
+## [14] &quot;gb|JQ740052|+|2108-3329|ARO:3000567|tet(40)&quot;               
+## [15] &quot;gb|DQ212986|+|7787-9926|ARO:3002972|vanTG&quot;                 
+## [16] &quot;gb|HM990671|+|5192-6671|ARO:3003112|lsaC&quot;                  
+## [17] &quot;gb|KM998962.1|+|0-861|ARO:3003158|TEM-220&quot;                 
+## [18] &quot;gb|M64090|+|0-735|ARO:3000595|ErmT&quot;                        
+## [19] &quot;gb|KX531052.1|+|0-2655|ARO:3003992|rphB&quot;                   
+## [20] &quot;gb|AF024666|+|35934-37110|ARO:3002703|cmx&quot;                 
+## [21] &quot;gb|KC170992.1|+|8362-9142|ARO:3003687|APH(3)-VI&quot;           
+## [22] &quot;gb|JF268688|-|5407-6232|ARO:3001809|OXA-209&quot;               
+## [23] &quot;gb|AY123251|+|2950-3505|ARO:3002594|AAC(6)-IIa&quot;            
+## [24] &quot;gb|KU612222.1|+|80337-81078|ARO:3003908|Erm(47)&quot;           
+## [25] &quot;gb|NG_036525|+|633-1431|ARO:3002613|aadA13&quot;                
+## [26] &quot;gb|D85892|+|1158-2067|ARO:3000318|mphB&quot;                    
+## [27] &quot;gb|U43152|+|93-582|ARO:3002866|dfrD&quot;                       
+## [28] &quot;gb|KU736867.1|+|19653-21573|ARO:3004442|tet(W/N/W)&quot;        
+## [29] &quot;gb|M55620|+|0-660|ARO:3002687|catQ&quot;                        
+## [30] &quot;gb|AJ420072.1|+|22939-24163|ARO:3000478|tet(33)&quot;           
+## [31] &quot;gb|NC_007682|+|20649-22125|ARO:3003109|msrE&quot;               
+## [32] &quot;gb|DQ241380.1|+|0-777|ARO:3002539|AAC(3)-IV&quot;               
+## [33] &quot;gb|NC_010410|-|3621491-3622283|ARO:3002601|aadA&quot;           
+## [34] &quot;gb|CP003022|+|336788-337580|ARO:3003197|aadA25&quot;            
+## [35] &quot;gb|NC_009495.1|-|3035492-3036527|ARO:3004146|cfrC&quot;         
+## [36] &quot;gb|AM261837|+|73-865|ARO:3002619|aadA22&quot;                   
+## [37] &quot;gb|FR734406|+|0-906|ARO:3003106|Erm(42)&quot;                   
+## [38] &quot;gb|AF242872|+|3579-4224|ARO:3002844|vatE&quot;                  
+## [39] &quot;gb|L06157|+|554-1085|ARO:3002530|AAC(3)-Ib&quot;                
+## [40] &quot;gb|AF337947|+|1214-1751|ARO:3002559|AAC(6)-Ip&quot;             
+## [41] &quot;gb|DQ393783|+|1799-2591|ARO:3002615|aadA15&quot;                
+## [42] &quot;gb|FR772051|+|8740-10315|ARO:3002833|vgaE&quot;                 
+## [43] &quot;gb|JX560992|+|8592-9321|ARO:3002630|ANT(9)-Ia&quot;             
+## [44] &quot;gb|CP006845.1|+|539695-540745|ARO:3002814|clbA&quot;            
+## [45] &quot;gb|AJ567827|+|0-792|ARO:3002611|aadA11&quot;                    
+## [46] &quot;gb|DQ149925.1|+|188-521|ARO:3003836|qacH&quot;                  
+## [47] &quot;gb|AJ884726|-|539-1325|ARO:3002614|aadA14&quot;                 
+## [48] &quot;gb|AP009048|-|4153663-4154296|ARO:3000518|CRP&quot;             
+## [49] &quot;gb|FN594949|+|27481-28339|ARO:3002629|ANT(6)-Ib&quot;           
+## [50] &quot;gb|U51479|+|0-921|ARO:3002636|APH(2)-IIIa&quot;                 
+## [51] &quot;gb|NC_005076|+|9897-10629|ARO:3000599|Erm(33)&quot;             
+## [52] &quot;gb|L09756|+|0-1926|ARO:3000192|tetS&quot;                       
+## [53] &quot;gb|X07753|+|102-882|ARO:3002652|APH(3)-VIa&quot;                
+## [54] &quot;gb|V01499|+|230-1256|ARO:3002655|APH(4)-Ia&quot;                
+## [55] &quot;gb|AF472622|+|52-1018|ARO:3003003|CfxA3&quot;                   
+## [56] &quot;gb|JQ808129|+|1598-2378|ARO:3002666|rmtF&quot;                  
+## [57] &quot;gb|AF462611|+|0-846|ARO:3000605|Erm(36)&quot;                   
+## [58] &quot;gb|NC_009632|+|49744-50476|ARO:3000347|ErmA&quot;               
+## [59] &quot;gb|CP016215.1|+|74426-75311|ARO:3003741|mphD&quot;              
+## [60] &quot;gb|L20800|+|2308-4267|ARO:3000195|tetB(P)&quot;                 
+## [61] &quot;gb|AF337947|+|271-1171|ARO:3002635|APH(2)-IIa&quot;             
+## [62] &quot;gb|BX664015|-|204137-204554|ARO:3000168|tet(D)&quot;            
+## [63] &quot;gb|U00096|-|2098446-2099613|ARO:3003577|pmrE&quot;              
+## [64] &quot;gb|KP399637|+|31476-33444|ARO:3003746|optrA&quot;               
+## [65] &quot;gb|AJ400733.1|+|21-585|ARO:3002854|dfrA1&quot;                  
+## [66] &quot;gb|GQ342996|+|797-1793|ARO:3003097|CfxA6&quot;                  
+## [67] &quot;gb|NC_005024|+|42504-43944|ARO:3002597|AAC(6)-Ie-APH(2)-Ia&quot;
+## [68] &quot;gb|NC_023287|-|60996-61860|ARO:3002626|ANT(6)-Ia&quot;          
+## [69] &quot;gb|NC_020418|+|458865-460071|ARO:3000165|tet(A)&quot;           
+## [70] &quot;gb|AJ584700|+|33-582|ARO:3002589|AAC(6)-Iid&quot;               
+## [71] &quot;gb|AB261016|+|3068-3728|ARO:3002665|npmA&quot;                  
+## [72] &quot;gb|FJ196385|-|11083-12313|ARO:3003107|mefB&quot;                
+## [73] &quot;gb|KX470419.1|+|3811-4615|ARO:3004085|lnuG&quot;                
+## [74] &quot;gb|DQ836009.1|+|1309-2131|ARO:3002879|linG&quot;                
+## [75] &quot;gb|AB014481|+|0-735|ARO:3002825|ErmY&quot;</code></pre>
 <pre class="r"><code>new &lt;- as(phylo_object@tax_table, &#39;matrix&#39;)
 new &lt;- new[,c(6,4)]
 newnew &lt;- phylo_object
@@ -733,9 +785,7 @@ labs(color = &#39;Associated Anti-Microbial\nResistance Drug Class&#39;, fill = 
 ## 3:         Effluent  Manure_Enriched      0.011
 ## 4:         Effluent       Background      0.000
 ## 5:         Effluent Manure_Persister      0.000</code></pre>
-</div>
-<div id="co-occurrence" class="section level1">
-<h1>Co-Occurrence</h1>
+<p>#Co-Occurrence</p>
 <pre class="r"><code>rho_cutoff &lt;- permute_rho(phylo_object, treatments, replicate_samples = &#39;Day&#39;, permutations = 1000)
 quantile_permuted_rhos(rho_cutoff)</code></pre>
 <pre class="r"><code>co_occurrence_table &lt;- co_occurrence(phylo_object, treatments, p = 0.05)
@@ -753,7 +803,6 @@ grid.arrange(b, a, ncol = 2)</code></pre>
 <p><img src="index_files/figure-html/effluent_networks_gene-1.png" width="1536" /></p>
 <pre class="r"><code>co_occurrence_network(phylo_object, &#39;ARG_Mechanism&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, layout = layout, cluster = TRUE, nodes_of_interest = c(&#39;tet(33)&#39;, &#39;ermB&#39;))</code></pre>
 <p><img src="index_files/figure-html/effluent_networks_mechanism-1.png" width="1536" /></p>
-</div>
 
 
 <p><br>
