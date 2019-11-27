@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
 <meta name="author" content="Schuyler D. smith" />
 
-<meta name="date" content="2019-09-23" />
+<meta name="date" content="2019-11-27" />
 
 <title>Soil Column ARG Dispersal Workflow</title>
 
@@ -238,6 +237,7 @@ $(document).ready(function () {
   border: none;
   display: inline-block;
   border-radius: 4px;
+  background-color: transparent;
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
@@ -266,6 +266,12 @@ $(document).ready(function () {
 }
 }
 
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
 
 .toc-content {
   padding-left: 30px;
@@ -365,22 +371,33 @@ div.tocify {
 
 <h1 class="title toc-ignore">Soil Column ARG Dispersal Workflow</h1>
 <h4 class="author">Schuyler D. smith</h4>
-<h4 class="date">2019-09-23</h4>
+<h4 class="date">2019-11-27</h4>
 
 </div>
 
 
-<p><br> <strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank">Project Repository with Data</a></strong> <br> <br> <strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank">Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</a></strong> <br> <br> #Required Pacakges</p>
+<p><br></p>
+<p><strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank"><font size="5">Project Repository with Data</font></a></strong></p>
+<p><br></p>
+<p><strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank"><font size="3"><i>Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</i></font></a></strong></p>
+<p><br></p>
+<div id="required-pacakges" class="section level1">
+<h1>Required Pacakges</h1>
 <pre class="r"><code>devtools::install_github(&#39;schuyler-smith/phylosmith&#39;)
 devtools::install_github(&#39;schuyler-smith/schuylR&#39;)</code></pre>
 <pre class="r"><code>library(data.table)
 library(phyloseq)
 library(phylosmith)
 library(ggplot2)
-library(vegan)
-library(schuylR)
+library(vegan)</code></pre>
+<pre><code>## Loading required package: permute</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## This is vegan 2.5-6</code></pre>
+<pre class="r"><code>library(schuylR)
 library(gridExtra)</code></pre>
-<p>#Data Setup</p>
+</div>
+<div id="data-setup" class="section level1">
+<h1>Data Setup</h1>
 <pre class="r"><code>phylo_object &lt;- readRDS(&quot;../data/soil_column_ARGs.RDS&quot;); phylo_object</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 320 taxa and 56 samples ]
@@ -394,17 +411,19 @@ phylo_object &lt;- phylosmith::set_treatment_levels(phylo_object, treatment = &#
 
 metadata &lt;- fread(&#39;../data/metadata.tsv&#39;)
 gsub(&#39;SC.*_A&#39;, &#39;A&#39;, metadata$`Sample ID`) == sample_names(phylo_object)</code></pre>
-<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
-## [15] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
-## [29] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
-## [43] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
+<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [16] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [31] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [46] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
 <pre class="r"><code>sample_names(phylo_object) &lt;- paste(sapply(strsplit(metadata$`Sample ID`, &#39;_&#39;),  `[`, 1), metadata$Day, sep = &#39;_Day_&#39;)
 phylo_object</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 320 taxa and 56 samples ]
 ## sample_data() Sample Data:       [ 56 samples by 9 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 320 taxa by 3 taxonomic ranks ]</code></pre>
-<p>#Manure Resistome vs Soil Resistome</p>
+</div>
+<div id="manure-resistome-vs-soil-resistome" class="section level1">
+<h1>Manure Resistome vs Soil Resistome</h1>
 <pre class="r"><code>manure</code></pre>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 173 taxa and 4 samples ]
@@ -415,7 +434,8 @@ phylo_object</code></pre>
 ## otu_table()   OTU Table:         [ 176 taxa and 16 samples ]
 ## sample_data() Sample Data:       [ 16 samples by 9 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 176 taxa by 5 taxonomic ranks ]</code></pre>
-<p>##Unique Genes for Each Resistome</p>
+<div id="unique-genes-for-each-resistome" class="section level2">
+<h2>Unique Genes for Each Resistome</h2>
 <pre class="r"><code>unique_control_genes &lt;- unique_taxa(phylo_object, treatments, c(&#39;Manure&#39;, &#39;Soil&#39;, &#39;Effluent&#39;)); sapply(unique_control_genes, length)</code></pre>
 <pre><code>##   Manure     Soil Effluent 
 ##       88        8       54</code></pre>
@@ -466,15 +486,22 @@ phylo_object</code></pre>
 ## Streptogramin                       0.000</code></pre>
 <pre class="r"><code>sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = &#39;Manure&#39;)))/sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = &#39;Soil&#39;)))</code></pre>
 <pre><code>## [1] 290.9389</code></pre>
-<p>#Phylogeny Profiles</p>
+</div>
+</div>
+<div id="phylogeny-profiles" class="section level1">
+<h1>Phylogeny Profiles</h1>
 <pre class="r"><code>g &lt;- phylogeny_profile(conglomerate_samples(phylo_object, treatment = treatments, merge_on = &#39;Day&#39;), &#39;ARG_Class&#39;, treatments, relative_abundance = TRUE) + 
   labs(fill = &#39;Associated Anti-Microbial\nResistance Drug Class&#39;, x = &#39;Sampling Day&#39;) + 
   guides(fill=guide_legend(ncol=1))
 g</code></pre>
 <p><img src="index_files/figure-html/phylogeny-bar-plots-1.png" width="1536" /></p>
-<p>#Ordination</p>
+</div>
+<div id="ordination" class="section level1">
+<h1>Ordination</h1>
 <p><img src="index_files/figure-html/tsne-relative-abundance-1.png" width="1536" /></p>
-<p>#Statistical Tests</p>
+</div>
+<div id="statistical-tests" class="section level1">
+<h1>Statistical Tests</h1>
 <pre class="r"><code>wilcox.test(as(manure@otu_table, &#39;matrix&#39;), as(soil@otu_table, &#39;matrix&#39;))</code></pre>
 <pre><code>## 
 ##  Wilcoxon rank sum test with continuity correction
@@ -594,9 +621,11 @@ adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, &#39;data.frame&
 ##           Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)
 ## Day        5    2.4338       0       0 0.69899      1
 ## Sample    18    1.0481       0       0 0.30101      1
-## Residuals  0    0.0000    -Inf         0.00000       
+## Residuals  0    0.0000     Inf         0.00000       
 ## Total     23    3.4818                 1.00000</code></pre>
-<p>#Identifying Persisting Genes from Manure</p>
+</div>
+<div id="identifying-persisting-genes-from-manure" class="section level1">
+<h1>Identifying Persisting Genes from Manure</h1>
 <pre class="r"><code>sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, &#39;Treatment&#39;, &#39;Manure&#39;)))</code></pre>
 <pre><code>## [1] 75</code></pre>
 <pre class="r"><code>sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, treatments, &#39;Manure-Treated Effluent&#39;)))</code></pre>
@@ -632,10 +661,12 @@ abundance_heatmap(manure_persisters, classification = &#39;Gene&#39;, treatment 
 <pre class="r"><code>abundance_lines(manure_persisters, &#39;Gene&#39;, treatments) + scale_x_discrete(expand = expand_scale(mult = c(0,0.02))) + 
   theme(panel.spacing = unit(3, &quot;cm&quot;)) + guides(colour = guide_legend(ncol = 1, override.aes = list(size = 4))) + 
   labs(color = &#39;Gene&#39;, x = &#39;Sampling Day&#39;)</code></pre>
-<pre><code>## Scale for &#39;x&#39; is already present. Adding another scale for &#39;x&#39;, which
-## will replace the existing scale.</code></pre>
+<pre><code>## Scale for &#39;x&#39; is already present. Adding another scale for &#39;x&#39;, which will
+## replace the existing scale.</code></pre>
 <p><img src="index_files/figure-html/all-persister-lines-1.png" width="1536" /></p>
-<p>#Identify Enriched Genes</p>
+</div>
+<div id="identify-enriched-genes" class="section level1">
+<h1>Identify Enriched Genes</h1>
 <pre class="r"><code>Soil &lt;- taxa_filter(phylo_object, treatments, subset = &#39;Soil&#39;, frequency = 0)
 Soil_genes &lt;- taxa_names(Soil)
 effluent &lt;- taxa_filter(phylo_object, treatments, subset = &#39;Effluent&#39;, frequency = 0)
@@ -804,6 +835,7 @@ grid.arrange(b, a, ncol = 2)</code></pre>
 <p><img src="index_files/figure-html/effluent_networks_gene-1.png" width="1536" /></p>
 <pre class="r"><code>co_occurrence_network(phylo_object, &#39;ARG_Mechanism&#39;, treatments, &#39;Manure-Treated Effluent&#39;, co_occurrence_table, layout = layout, cluster = TRUE, nodes_of_interest = c(&#39;tet(33)&#39;, &#39;ermB&#39;))</code></pre>
 <p><img src="index_files/figure-html/effluent_networks_mechanism-1.png" width="1536" /></p>
+</div>
 
 
 <p><br>

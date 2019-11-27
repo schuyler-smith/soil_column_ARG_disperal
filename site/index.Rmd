@@ -2,15 +2,22 @@
 title: "Soil Column ARG Dispersal Workflow"
 author: "Schuyler D. smith"
 date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
 ---
+
 <br>
-<strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank">Project Repository with Data</a></strong>
+
+<strong><a href="https://github.com/schuyler-smith/soil_column_ARG_disperal" target="_blank"><font size="5">Project Repository with Data</font></a></strong>
+
 <br>
+
+<strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank"><font size="3"><i>Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</i></font></a></strong>
+
 <br>
-<strong><a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0222470" target="_blank">Investigating the dispersal of antibiotic resistance associated genes from manure application to soil and drainage waters in simulated agricultural farmland systems</a></strong>
-<br>
-<br>
-#Required Pacakges
+
+# Required Pacakges
+
 ```{r install-packages, eval=FALSE}
 devtools::install_github('schuyler-smith/phylosmith')
 devtools::install_github('schuyler-smith/schuylR')
@@ -27,7 +34,7 @@ library(schuylR)
 library(gridExtra)
 ```
 
-#Data Setup
+# Data Setup
 
 ```{r load-data}
 phylo_object <- readRDS("../data/soil_column_ARGs.RDS"); phylo_object
@@ -63,7 +70,7 @@ soil <- taxa_filter(phylo_object, treatments, subset = c('Soil', 'Effluent'), fr
 soil_genes <- taxa_names(soil)
 ```
 
-#Manure Resistome vs Soil Resistome
+# Manure Resistome vs Soil Resistome
 
 ```{r manure-genes}
 manure
@@ -72,7 +79,7 @@ manure
 soil
 ```
 
-##Unique Genes for Each Resistome
+## Unique Genes for Each Resistome
 
 ```{r unique-control-genes}
 unique_control_genes <- unique_taxa(phylo_object, treatments, c('Manure', 'Soil', 'Effluent')); sapply(unique_control_genes, length)
@@ -90,7 +97,7 @@ data.frame(taxa_proportions(soil, 'ARG_Class'), row.names = 1)
 sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = 'Manure')))/sum(taxa_sums(taxa_filter(phylo_object, treatment = treatments, subset = 'Soil')))
 ```
 
-#Phylogeny Profiles
+# Phylogeny Profiles
 
 ```{r phylogeny-bar-plots, fig.fullwidth=TRUE, warning=FALSE}
 g <- phylogeny_profile(conglomerate_samples(phylo_object, treatment = treatments, merge_on = 'Day'), 'ARG_Class', treatments, relative_abundance = TRUE) + 
@@ -99,7 +106,7 @@ g <- phylogeny_profile(conglomerate_samples(phylo_object, treatment = treatments
 g
 ```
 
-#Ordination
+# Ordination
 
 ```{r tsne-relative-abundance, echo=FALSE}
 phyloseq_obj = relative_abundance(phylo_object)
@@ -135,7 +142,7 @@ g + guides(fill = guide_legend(override.aes=list(shape=c(21,22,24,22,24)), keywi
                  default.unit = "inch")) + labs(fill = 'Sample Type')
 ```
 
-#Statistical Tests
+# Statistical Tests
 
 ```{r Mann-Whitney-test}
 wilcox.test(as(manure@otu_table, 'matrix'), as(soil@otu_table, 'matrix'))
@@ -166,7 +173,7 @@ dat <- taxa_filter(phylo_object, treatment = treatments, subset = 'Manure-Treate
 adonis(t(dat@otu_table) ~ Day * Sample, data = as(dat@sam_data, 'data.frame'),  permutations=1000, method = "bray")
 ```
 
-#Identifying Persisting Genes from Manure
+# Identifying Persisting Genes from Manure
 
 ```{r identify-persisters}
 sum(unique_control_genes$Manure %in% taxa_names(taxa_filter(phylo_object, 'Treatment', 'Manure')))
@@ -203,7 +210,7 @@ abundance_lines(manure_persisters, 'Gene', treatments) + scale_x_discrete(expand
   labs(color = 'Gene', x = 'Sampling Day')
 ```
 
-#Identify Enriched Genes
+# Identify Enriched Genes
 
 ```{r identify-stimulated-lists}
 Soil <- taxa_filter(phylo_object, treatments, subset = 'Soil', frequency = 0)
